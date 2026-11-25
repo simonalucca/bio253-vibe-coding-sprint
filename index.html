@@ -66,6 +66,8 @@
   .timer-task { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1.2em; margin-bottom: 8px; }
   .timer-mode { text-align: center; font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
   .row-btns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .timer-settings { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 12px; font-size: .8rem; color: var(--muted); }
+  .timer-settings input { width: 62px; padding: 4px 6px; margin: 0 3px; }
   .io { display: flex; gap: 6px; flex-wrap: wrap; }
   li.task.editing { display: block; border-left-color: var(--accent); background: #eef2ff; }
   .edit-form { display: grid; grid-template-columns: 2fr 1fr minmax(140px, 1fr) auto auto auto; gap: 6px; }
@@ -124,6 +126,10 @@
         <button id="timerStart" class="primary">Start</button>
         <button id="timerReset">Reset</button>
         <button id="timerSkip">Skip</button>
+      </div>
+      <div class="timer-settings">
+        <label>Focus<input type="number" id="focusMin" min="1" max="180" value="25">min</label>
+        <label>Break<input type="number" id="breakMin" min="1" max="60" value="5">min</label>
       </div>
     </section>
 
@@ -324,7 +330,10 @@ function render() {
 }
 
 // ---------- Pomodoro timer ----------
+// Timer lengths in seconds; the user can change the minutes and they are remembered
+const TIMER_KEY = "studyPlanner.timer.v1";
 const DURATIONS = { focus: 25 * 60, break: 5 * 60 };
+try { Object.assign(DURATIONS, JSON.parse(localStorage.getItem(TIMER_KEY)) || {}); } catch {}
 let mode = "focus", remaining = DURATIONS.focus, ticking = null, focusTask = null;
 
 function showTime() {
@@ -370,6 +379,20 @@ $("timerStart").addEventListener("click", () => {
 });
 $("timerReset").addEventListener("click", () => resetTimer());
 $("timerSkip").addEventListener("click", () => resetTimer(mode === "focus" ? "break" : "focus"));
+
+// New minutes apply at once if the timer is stopped, otherwise from the next round
+function setMinutes(which, input) {
+  const max = which === "focus" ? 180 : 60;
+  const min = Math.min(max, Math.max(1, Math.round(+input.value || 0)));
+  input.value = min;
+  DURATIONS[which] = min * 60;
+  try { localStorage.setItem(TIMER_KEY, JSON.stringify(DURATIONS)); } catch {}
+  if (!ticking && mode === which) { remaining = DURATIONS[which]; showTime(); }
+}
+$("focusMin").value = DURATIONS.focus / 60;
+$("breakMin").value = DURATIONS.break / 60;
+$("focusMin").addEventListener("change", e => setMinutes("focus", e.target));
+$("breakMin").addEventListener("change", e => setMinutes("break", e.target));
 
 // ---------- Export / import ----------
 $("exportBtn").addEventListener("click", () => {
