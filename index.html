@@ -67,6 +67,10 @@
   .timer-mode { text-align: center; font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
   .row-btns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
   .io { display: flex; gap: 6px; flex-wrap: wrap; }
+  li.task.editing { display: block; border-left-color: var(--accent); background: #eef2ff; }
+  .edit-form { display: grid; grid-template-columns: 2fr 1fr minmax(140px, 1fr) auto auto auto; gap: 6px; }
+  .edit-form > * { min-width: 0; }
+  @media (max-width: 820px) { .edit-form { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -220,8 +224,45 @@ $("taskList").addEventListener("click", e => {
   if (act === "toggle") t.done = e.target.checked;
   else if (act === "delete") { if (!confirm(`Delete "${t.title}"?`)) return; tasks = tasks.filter(x => x !== t); }
   else if (act === "focus") { focusTask = t.id; resetTimer("focus"); }
+  else if (act === "edit") editingId = t.id;
+  else if (act === "cancel") editingId = null;
+  else if (act === "save") { if (!saveEdit(li, t)) return; }
   else return;
   save(); render();
+});
+
+// ---------- Edit ----------
+// Only one task is in edit mode at a time; render() shows a small form for it
+let editingId = null;
+function editRow(t) {
+  return `<li class="task editing" data-id="${t.id}">
+    <div class="edit-form">
+      <input data-field="title" value="${esc(t.title)}" placeholder="Title">
+      <input data-field="subject" value="${esc(t.subject)}" list="subjectList" placeholder="Subject">
+      <input data-field="due" type="date" value="${esc(t.due)}">
+      <select data-field="type">
+        <option value="todo" ${t.type === "todo" ? "selected" : ""}>📝 To-do</option>
+        <option value="exam" ${t.type === "exam" ? "selected" : ""}>🎓 Exam</option>
+      </select>
+      <button class="small primary" data-act="save">Save</button>
+      <button class="small" data-act="cancel">Cancel</button>
+    </div>
+  </li>`;
+}
+function saveEdit(li, t) {
+  const get = (f) => li.querySelector(`[data-field="${f}"]`).value.trim();
+  const title = get("title"), subject = get("subject"), due = get("due");
+  if (!title || !subject || !due) { alert("Please fill in title, subject and date."); return false; }
+  Object.assign(t, { title, subject, due, type: get("type") });
+  editingId = null;
+  return true;
+}
+// Enter saves, Escape cancels while editing
+$("taskList").addEventListener("keydown", e => {
+  if (!editingId) return;
+  const li = e.target.closest("li.task");
+  if (e.key === "Enter" && li) li.querySelector('[data-act="save"]').click();
+  if (e.key === "Escape") { editingId = null; render(); }
 });
 
 // ---------- Render ----------
@@ -243,6 +284,7 @@ function render() {
     .sort((a, b) => (a.done - b.done) || a.due.localeCompare(b.due));
 
   $("taskList").innerHTML = list.length ? list.map(t => {
+    if (t.id === editingId) return editRow(t);
     const d = daysLeft(t.due);
     const cls = ["task", t.done ? "done" : urgency(d), t.type === "exam" ? "exam" : ""].join(" ");
     const typeBadge = t.type === "exam"
@@ -259,10 +301,12 @@ function render() {
       <div class="actions">
         <span class="days">${t.done ? "✓ done" : daysLabel(d)}</span>
         ${t.done ? "" : `<button class="small" data-act="focus" title="Focus on this task">▶</button>`}
+        <button class="small" data-act="edit" title="Edit">✎</button>
         <button class="small" data-act="delete" title="Delete">✕</button>
       </div>
     </li>`;
   }).join("") : `<li class="empty">No tasks here yet. Add one above! 🎉</li>`;
+  if (editingId) document.querySelector('li.editing [data-field="title"]')?.focus();
 
   // progress per subject
   $("progress").innerHTML = subjects.length ? subjects.map(s => {
