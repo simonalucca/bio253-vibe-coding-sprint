@@ -3,6 +3,10 @@
 A small planner for homework, course to-dos and exams, built during the BIO253 vibe-coding sprint.
 It is a single HTML file and runs in any browser with nothing to install.
 
+## 👉 [Try it live](https://simonalucca.github.io/bio253-vibe-coding-sprint/)
+
+**https://simonalucca.github.io/bio253-vibe-coding-sprint/** (no download needed, works on phone too)
+
 ## How to run
 
 ```bash
