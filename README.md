@@ -28,6 +28,7 @@ open index.html        # macOS. On Windows/Linux, double-click index.html
 - 🎓 **Exams stand out** with a purple outline and an EXAM badge. You can filter to show only exams or only to-dos.
 - 🍅 **Focus timer (Pomodoro):** click ▶ on a task to run 25 min focus / 5 min break. Each completed focus session is counted on the task.
 - ⬇⬆ **Export / import** tasks as a `.json` file, for example to share a plan with your project partner.
+- ✎ **Edit tasks:** change the title, subject, date or type of an existing task (Enter saves, Esc cancels).
 - Filter by subject, and hide finished tasks.
 
 ## Notes
